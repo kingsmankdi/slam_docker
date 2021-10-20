@@ -1,0 +1,45 @@
+name: Docker Builder
+
+on:
+  push:
+    paths:
+      - 'Dockerfile'
+  workflow_dispatch:
+  schedule:
+    # Runs At 00:00 on Sunday
+    - cron: '0 0 * * 0'
+
+jobs:
+
+  build:
+
+    runs-on: ubuntu-latest
+
+    env:
+      DOCKER_USERNAME: polichi321
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+      IMAGE_NAME: slam_docker
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Create & Push the ttk_docker Container
+      run: >-
+        echo "$DOCKERHUB_TOKEN" | docker login -u $DOCKER_USERNAME --password-stdin
+        
+        echo ".git" > .dockerignore
+        
+        docker build . --file Dockerfile
+        --rm --force-rm --compress --no-cache=true --pull
+        --label org.label-schema.build-date=$(date -u +"%Y-%m-%dT%H:%M:%S%Z")
+        --label org.label-schema.name="TTK Base Image"
+        --label org.label-schema.description="No Need To Describe TTK, You Already Know."
+        --label org.label-schema.url="https://kingsmankdi.github.io"
+        --label org.label-schema.vcs-ref=$(git rev-parse --short HEAD)
+        --label org.label-schema.vcs-url=$(git remote get-url origin)
+        --label org.label-schema.vendor="kingsmankdi"
+        --label org.label-schema.version='1.0'
+        --label org.label-schema.schema-version="1.0"
+        --tag $DOCKER_USERNAME/$IMAGE_NAME:latest
+        
+        docker push $DOCKER_USERNAME/$IMAGE_NAME:latest
